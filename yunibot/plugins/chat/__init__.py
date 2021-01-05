@@ -8,6 +8,7 @@ from .config import Config
 global_config = get_driver().config
 config = Config(**global_config.dict())
 
+# pylint: disable=C0103
 hello = on_keyword({"zai?", "在?", "在？", "在吗", "在么？", "在嘛", "在嘛？"}, rule=to_me())
 
 
