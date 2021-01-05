@@ -3,8 +3,13 @@
 
 # pylint: skip-file
 
+import pathlib
+
 import nonebot
 from nonebot.adapters.cqhttp import Bot as CQHTTPBot
+
+CWD = pathlib.Path.cwd()
+CACHE_DIR = CWD.joinpath(".yunibot")
 
 # Custom your logger
 #
@@ -22,6 +27,8 @@ app = nonebot.get_asgi()
 driver = nonebot.get_driver()
 driver.register_adapter("cqhttp", CQHTTPBot)
 
+if not CACHE_DIR.exists():
+    CACHE_DIR.mkdir()
 
 nonebot.load_builtin_plugins()
 nonebot.load_plugins("yunibot/plugins")
