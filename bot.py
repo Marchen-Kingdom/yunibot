@@ -19,7 +19,7 @@ from nonebot.adapters.cqhttp import Bot as CQHTTPBot
 nonebot.init()
 app = nonebot.get_asgi()
 
-driver = nonebot.get_driver()  # type: ignore
+driver = nonebot.get_driver()
 driver.register_adapter("cqhttp", CQHTTPBot)
 
 
