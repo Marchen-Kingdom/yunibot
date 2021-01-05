@@ -1,14 +1,8 @@
-from nonebot import get_driver
 from nonebot.adapters import Bot, Event
 from nonebot.adapters.cqhttp.event import GroupMessageEvent
 from nonebot.plugin import on_keyword, on_message
 from nonebot.rule import to_me
 from nonebot.typing import T_State
-
-from .config import Config
-
-global_config = get_driver().config
-config = Config(**global_config.dict())
 
 # pylint: disable=C0103
 hello = on_keyword({"zai?", "在?", "在？", "在吗", "在么？", "在嘛", "在嘛？"}, rule=to_me())
