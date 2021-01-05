@@ -154,6 +154,7 @@ disable=abstract-method,
         zip-builtin-not-iterating,
         bad-continuation,
         bad-whitespace,
+        missing-module-docstring,
 
 
 [REPORTS]
