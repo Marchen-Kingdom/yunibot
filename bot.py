@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+# pylint: skip-file
+
 import nonebot
 from nonebot.adapters.cqhttp import Bot as CQHTTPBot
 
-
 # Custom your logger
-# 
+#
 # from nonebot.log import logger, default_format
 # logger.add("error.log",
 #            rotation="00:00",
@@ -26,7 +27,7 @@ nonebot.load_builtin_plugins()
 nonebot.load_plugins("yunibot/plugins")
 
 # Modify some config / config depends on loaded configs
-# 
+#
 # config = driver.config
 # do something...
 
