@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+# pylint: skip-file
+
 import nonebot
 from nonebot.adapters.cqhttp import Bot as CQHTTPBot
-
 
 # Custom your logger
 #
@@ -18,7 +19,7 @@ from nonebot.adapters.cqhttp import Bot as CQHTTPBot
 nonebot.init()
 app = nonebot.get_asgi()
 
-driver = nonebot.get_driver()
+driver = nonebot.get_driver()  # type: ignore
 driver.register_adapter("cqhttp", CQHTTPBot)
 
 
