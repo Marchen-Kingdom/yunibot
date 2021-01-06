@@ -44,6 +44,7 @@ async def _on_bot_connect(bot: Bot):
 
 get_driver().on_bot_connect(_on_bot_connect)
 
+# pylint: disable=invalid-name
 create_clan = on_command("建会")
 
 
@@ -61,6 +62,7 @@ async def handle_create_clan(bot: Bot, event: GroupMessageEvent):
     server = server.upper()
     if server not in SERVERS:
         await create_clan.reject("服务器不合法")
+    # pylint: disable=no-value-for-parameter
     await database.execute(
         clans.insert().values(group_id=group_id, clan_name=clan_name, server=server)
     )
