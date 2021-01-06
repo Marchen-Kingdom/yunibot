@@ -74,22 +74,22 @@ async def _member_exists(group_id: int, user_id: int) -> bool:
 
 
 # pylint: disable=invalid-name
-create_clan = on_command("建会")
+create_clan = on_command("建会", block=True)
 
 
 @create_clan.handle()
 async def handle_create_clan(bot: Bot, event: GroupMessageEvent):
     msg = str(event.get_message()).strip().split()
     if len(msg) != 2:
-        await create_clan.reject("输入错误")
+        await create_clan.finish("输入错误")
 
     group_id = event.group_id
     clan_name, server = msg
     if await _clan_exists(group_id):
-        await create_clan.reject("公会已存在")
+        await create_clan.finish("公会已存在")
     server = server.upper()
     if server not in SERVERS:
-        await create_clan.reject("服务器不合法")
+        await create_clan.finish("服务器不合法")
     # pylint: disable=no-value-for-parameter
     await database.execute(
         clans.insert().values(group_id=group_id, clan_name=clan_name, server=server)
@@ -97,18 +97,18 @@ async def handle_create_clan(bot: Bot, event: GroupMessageEvent):
     await create_clan.finish("成功建立公会")
 
 
-join_clan = on_command("入会")
+join_clan = on_command("入会", block=True)
 
 
 @join_clan.handle()
 async def handle_join_clan(bot: Bot, event: GroupMessageEvent):
     group_id = event.group_id
     if not await _clan_exists(group_id):
-        await join_clan.reject("公会尚未建立")
+        await join_clan.finish("公会尚未建立")
 
     user_id = event.user_id
     if await _member_exists(group_id, user_id):
-        await join_clan.reject("成员已存在")
+        await join_clan.finish("成员已存在")
 
     msg = str(event.get_message()).strip()
     if msg:
@@ -118,7 +118,8 @@ async def handle_join_clan(bot: Bot, event: GroupMessageEvent):
             group_id=group_id, user_id=user_id
         )
         nickname = member_info["nickname"]
-    database.execute(
+    # pylint: disable=no-value-for-parameter
+    await database.execute(
         members.insert().values(group_id=group_id, user_id=user_id, nickname=nickname)
     )
     await join_clan.finish("成功加入公会")
