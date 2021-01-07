@@ -25,20 +25,18 @@ class ClanManager:
         await self.db.connect()
 
     async def clan_exists(self, group_id: int) -> bool:
-        row = await self.db.fetch_one(
-            clans.select().where(clans.c.group_id == group_id)
-        )
-        if row is None:
+        row = await self.db.execute(clans.select().where(clans.c.group_id == group_id))
+        if row == -1:
             return False
         return True
 
     async def member_exists(self, group_id: int, user_id: int) -> bool:
-        row = await self.db.fetch_one(
+        row = await self.db.execute(
             members.select().where(
                 members.c.group_id == group_id and members.c.user_id == user_id
             )
         )
-        if row is None:
+        if row == -1:
             return False
         return True
 
