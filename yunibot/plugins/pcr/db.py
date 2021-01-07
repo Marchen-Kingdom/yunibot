@@ -1,4 +1,5 @@
 import asyncio
+from typing import List
 
 import sqlalchemy
 from databases import Database
@@ -54,3 +55,11 @@ class ClanManager:
                 group_id=group_id, user_id=user_id, nickname=nickname
             )
         )
+
+    async def list_members(self, group_id: int) -> List[str]:
+        rows = await self.db.fetch_all(
+            sqlalchemy.select([members.c.nickname]).where(
+                members.c.group_id == group_id
+            )
+        )
+        return [nickname for (nickname,) in rows]
