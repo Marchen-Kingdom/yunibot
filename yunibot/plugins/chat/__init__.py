@@ -1,8 +1,12 @@
+import random
+
 from nonebot.adapters import Bot, Event
 from nonebot.adapters.cqhttp.event import GroupMessageEvent
 from nonebot.plugin import on_keyword, on_message
 from nonebot.rule import to_me
 from nonebot.typing import T_State
+
+from .data import chp_data
 
 # pylint: disable=C0103
 hello = on_keyword({"zai?", "在?", "在？", "在吗", "在么？", "在嘛", "在嘛？"}, rule=to_me())
@@ -52,3 +56,16 @@ async def handle_nihaole(bot: Bot, event: GroupMessageEvent):
         duration=60,
     )
     await bot.send(event, "不许好，憋回去！", at_sender=True)
+
+
+async def is_chp(bot: Bot, event: Event, state: T_State) -> bool:
+    msg = str(event.get_message()).strip()
+    return msg == "来点彩虹屁"
+
+
+chp = on_message(rule=is_chp)
+
+
+@chp.handle()
+async def handle_chp(bot: Bot):
+    await chp.finish(random.choice(chp_data))
