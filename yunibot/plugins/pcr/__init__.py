@@ -15,9 +15,12 @@ settings = Settings(**global_config.dict())
 
 cache_dir = pathlib.Path(settings.cache_dir).absolute()
 db_dir = cache_dir.joinpath("db")
+img_dir = cache_dir.joinpath("img")
 
 if not db_dir.exists():
     db_dir.mkdir(parents=True)
+if not img_dir.exists():
+    img_dir.mkdir(parents=True)
 
 db_name = settings.pcr_db_name
 db_path = db_dir.joinpath(db_name)
