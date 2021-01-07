@@ -1,14 +1,12 @@
 import pathlib
 
-import sqlalchemy
-from databases import Database
 from nonebot import get_driver
 from nonebot.adapters import Bot, Event
 from nonebot.adapters.cqhttp.event import GroupMessageEvent
 from nonebot.plugin import on_command
-from sqlalchemy.sql.schema import ForeignKey
 
 from .config import Settings
+from .db import ClanManager
 
 SERVERS = ["JP", "TC", "SC"]
 
@@ -24,54 +22,14 @@ if not db_dir.exists():
 db_name = settings.pcr_db_name
 db_path = db_dir.joinpath(db_name)
 db_url = f"sqlite:///{str(db_path)}"
-
-database = Database(db_url)
-engine = sqlalchemy.create_engine(db_url)
-
-metadata = sqlalchemy.MetaData()
-clans = sqlalchemy.Table(
-    "clans",
-    metadata,
-    sqlalchemy.Column("group_id", sqlalchemy.Integer, primary_key=True),
-    sqlalchemy.Column("clan_name", sqlalchemy.String),
-    sqlalchemy.Column("server", sqlalchemy.String),
-)
-members = sqlalchemy.Table(
-    "members",
-    metadata,
-    sqlalchemy.Column(
-        "group_id", sqlalchemy.Integer, ForeignKey("clans.group_id"), primary_key=True
-    ),
-    sqlalchemy.Column("user_id", sqlalchemy.Integer, primary_key=True),
-    sqlalchemy.Column("nickname", sqlalchemy.String),
-)
+clan_manager = ClanManager(db_url)
 
 
 async def _on_bot_connect(bot: Bot):
-    metadata.create_all(engine)
-    await database.connect()
+    await clan_manager.connect()
 
 
 get_driver().on_bot_connect(_on_bot_connect)
-
-
-async def _clan_exists(group_id: int) -> bool:
-    row = await database.fetch_one(clans.select().where(clans.c.group_id == group_id))
-    if row is None:
-        return False
-    return True
-
-
-async def _member_exists(group_id: int, user_id: int) -> bool:
-    row = await database.fetch_one(
-        members.select().where(
-            members.c.group_id == group_id and members.c.user_id == user_id
-        )
-    )
-    if row is None:
-        return False
-    return True
-
 
 # pylint: disable=invalid-name
 create_clan = on_command("建会", block=True)
@@ -85,15 +43,13 @@ async def handle_create_clan(bot: Bot, event: GroupMessageEvent):
 
     group_id = event.group_id
     clan_name, server = msg
-    if await _clan_exists(group_id):
+    if await clan_manager.clan_exists(group_id):
         await create_clan.finish("公会已存在")
     server = server.upper()
     if server not in SERVERS:
         await create_clan.finish("服务器不合法")
-    # pylint: disable=no-value-for-parameter
-    await database.execute(
-        clans.insert().values(group_id=group_id, clan_name=clan_name, server=server)
-    )
+
+    await clan_manager.create_clan(group_id, clan_name, server)
     await create_clan.finish("成功建立公会")
 
 
@@ -103,11 +59,11 @@ join_clan = on_command("入会", block=True)
 @join_clan.handle()
 async def handle_join_clan(bot: Bot, event: GroupMessageEvent):
     group_id = event.group_id
-    if not await _clan_exists(group_id):
+    if not await clan_manager.clan_exists(group_id):
         await join_clan.finish("公会尚未建立")
 
     user_id = event.user_id
-    if await _member_exists(group_id, user_id):
+    if await clan_manager.member_exists(group_id, user_id):
         await join_clan.finish("成员已存在")
 
     msg = str(event.get_message()).strip()
@@ -118,8 +74,6 @@ async def handle_join_clan(bot: Bot, event: GroupMessageEvent):
             group_id=group_id, user_id=user_id
         )
         nickname = member_info["nickname"]
-    # pylint: disable=no-value-for-parameter
-    await database.execute(
-        members.insert().values(group_id=group_id, user_id=user_id, nickname=nickname)
-    )
+
+    await clan_manager.add_member(group_id, user_id, nickname)
     await join_clan.finish("成功加入公会")
