@@ -77,3 +77,18 @@ async def handle_join_clan(bot: Bot, event: GroupMessageEvent):
 
     await clan_manager.add_member(group_id, user_id, nickname)
     await join_clan.finish("成功加入公会")
+
+
+list_members = on_command("查看成员", block=True)
+
+
+@list_members.handle()
+async def handle_list_members(bot: Bot, event: GroupMessageEvent):
+    group_id = event.group_id
+    if not await clan_manager.clan_exists(group_id):
+        await list_members.finish("公会尚未建立")
+
+    nicknames = await clan_manager.list_members(group_id)
+    if not nicknames:
+        await list_members.finish("公会尚无成员")
+    await list_members.finish("\n".join(nicknames))
