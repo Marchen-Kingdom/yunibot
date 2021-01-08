@@ -1,4 +1,7 @@
 import pathlib
+from datetime import datetime, timedelta, timezone
+from enum import Enum, auto
+from typing import Tuple
 
 from nonebot import get_driver
 from nonebot.adapters import Bot, Event
@@ -8,10 +11,28 @@ from nonebot.log import logger
 from nonebot.plugin import on_command
 
 from .config import Settings
+from .data import BOSS_HP, SCORE_RATES
 from .db import ClanManager
 
 SERVERS = ["JP", "TC", "SC"]
 RANK_GUIDE_TYPES = ["前卫", "中卫", "后卫"]
+
+
+class Server(Enum):
+    """Represents the server region."""
+
+    JP = auto()
+    TC = auto()
+    SC = auto()
+
+    def __str__(self):
+        if self == Server.JP:
+            return "JP"
+        if self == Server.TC:
+            return "TC"
+        if self == Server.SC:
+            return "SC"
+
 
 global_config = get_driver().config
 settings = Settings(**global_config.dict())
@@ -127,3 +148,52 @@ async def handle_rank_guides(bot: Bot, event: GroupMessageEvent):
     rank_guide_path = f"file:///{img_dir.joinpath(rank_guide)}"
     guide_img = MessageSegment.image(rank_guide_path)
     await rank_guides.finish(guide_img, at_sender=True)
+
+
+def get_tz(server: Server) -> int:
+    if server == Server.JP:
+        return 9
+    return 8
+
+
+def get_clanbattle_date(time: datetime, tz: int = 8) -> Tuple[int, int, int]:
+    time = time.astimezone(timezone(timedelta(hours=tz - 5)))
+    y = time.year
+    m = time.month
+    d = time.day
+
+    if d < 10:
+        m -= 1
+    if m < 1:
+        m = 12
+        y = y - 1
+
+    return (y, m, d)
+
+
+def next_boss(round_: int, boss: int) -> Tuple[int, int]:
+    return (round_, boss + 1) if boss < 5 else (round_ + 1, 1)
+
+
+def get_stage(round_: int, server: Server) -> int:
+    if server == Server.SC:
+        return 4 if round_ >= 11 else 3 if round_ >= 6 else 2 if round_ >= 2 else 1
+
+    return (
+        5
+        if round_ >= 45
+        else 4
+        if round_ >= 35
+        else 3
+        if round_ >= 11
+        else 2
+        if round_ >= 4
+        else 1
+    )
+
+
+def get_boss_info(round_: int, boss: int, server: Server) -> Tuple[int, float]:
+    stage = get_stage(round_, server)
+    boss_hp = BOSS_HP[str(server)][stage - 1][boss - 1]
+    score_rate = SCORE_RATES[str(server)][stage - 1][boss - 1]
+    return boss_hp, score_rate
