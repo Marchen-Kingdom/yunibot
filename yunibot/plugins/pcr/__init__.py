@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pathlib
 from datetime import datetime, timedelta, timezone
 from enum import Enum, auto
@@ -24,6 +26,7 @@ class Server(Enum):
     JP = auto()
     TC = auto()
     SC = auto()
+    UNKNOWN = auto()
 
     def __str__(self):
         if self == Server.JP:
@@ -32,6 +35,18 @@ class Server(Enum):
             return "TC"
         if self == Server.SC:
             return "SC"
+
+        return "UNKNOWN"
+
+    @classmethod
+    def get_server(cls, name: str) -> Server:
+        if name == "JP":
+            return Server.JP
+        if name == "TC":
+            return Server.TC
+        if name == "SC":
+            return Server.SC
+        return Server.UNKNOWN
 
 
 global_config = get_driver().config
