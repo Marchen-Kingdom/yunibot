@@ -1,3 +1,5 @@
+# pylint: disable=line-too-long
+# Source: https://github.com/Ice-Cirno/HoshinoBot/blob/master/hoshino/modules/pcrclanbattle/clanbattle/config.json
 BOSS_HP = {
     "JP": [
         [6000000, 8000000, 10000000, 12000000, 15000000],
