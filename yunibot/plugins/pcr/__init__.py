@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import operator
 import pathlib
 from datetime import datetime, timedelta, timezone
 from enum import Enum, auto
@@ -47,6 +48,13 @@ class Server(Enum):
         if name == "SC":
             return Server.SC
         return Server.UNKNOWN
+
+
+class ChallengeType(Enum):
+    NORM = auto()
+    LAST = auto()
+    EXT = auto()
+    TIMEOUT = auto()
 
 
 global_config = get_driver().config
@@ -171,7 +179,7 @@ def get_tz(server: Server) -> int:
     return 8
 
 
-def get_clanbattle_date(time: datetime, tz: int = 8) -> Tuple[int, int, int]:
+def get_date(time: datetime, tz: int = 8) -> Tuple[int, int, int]:
     time = time.astimezone(timezone(timedelta(hours=tz - 5)))
     y = time.year
     m = time.month
@@ -212,3 +220,88 @@ def get_boss_info(round_: int, boss: int, server: Server) -> Tuple[int, float]:
     boss_hp = BOSS_HP[str(server)][stage - 1][boss - 1]
     score_rate = SCORE_RATES[str(server)][stage - 1][boss - 1]
     return boss_hp, score_rate
+
+
+def get_utc_now() -> int:
+    return int(datetime.utcnow().timestamp())
+
+
+async def get_current_progress(
+    group_id: int, year: int, month: int, server: Server
+) -> Tuple[int, int, int]:
+    challenges = await clan_manager.get_challenges(group_id, year, month)
+    if len(challenges) == 0:
+        round_ = 1
+        boss = 1
+        remaining_hp, _ = get_boss_info(round_, boss, server)
+        return round_, boss, remaining_hp
+
+    challenges.sort(key=operator.attrgetter("time"), reverse=True)
+    last_challenge = challenges[0]
+    round_ = last_challenge.round_
+    boss = last_challenge.boss
+
+    remaining_hp, _ = get_boss_info(round_, boss, server)
+    for challenge in challenges:
+        if challenge.round_ == round_ and challenge.boss == boss:
+            remaining_hp -= challenge.damage
+        else:
+            break
+    if remaining_hp <= 0:
+        round_, boss = next_boss(round_, boss)
+        remaining_hp, _ = get_boss_info(round_, boss, server)
+    return round_, boss, remaining_hp
+
+
+show_progress = on_command("进度", block=True)
+
+
+@show_progress.handle()
+async def handle_show_progress(bot: Bot, event: GroupMessageEvent):
+    group_id = event.group_id
+    if not await clan_manager.clan_exists(group_id):
+        await show_progress.finish("公会尚未建立")
+
+    now = datetime.now()
+    year, month, _ = get_date(now)
+    _, _, server_code = await clan_manager.get_clan(group_id)
+    server = Server.get_server(server_code)
+    round_, boss, remaining_hp = await get_current_progress(
+        group_id, year, month, server
+    )
+    boss_hp, _ = get_boss_info(round_, boss, server)
+    stage = get_stage(round_, server)
+    report = "目前状态：\n\n"
+    report += f"周目：{round_}\n"
+    report += f"阶段：{stage}\n"
+    report += f"Boss：{1}\n"
+    report += f"剩余血量：{remaining_hp}/{boss_hp}"
+    await show_progress.finish(report)
+
+
+# add_challenge = on_command("出刀", block=True)
+
+
+# @add_challenge.handle()
+# async def handle_add_challenge(bot: Bot, event: GroupMessageEvent):
+#     msg = str(event.get_message()).strip()
+#     try:
+#         damage = int(msg)
+#     except ValueError:
+#         await add_challenge.finish("输入错误")
+
+#     group_id = event.group_id
+#     if not await clan_manager.clan_exists(group_id):
+#         await add_challenge.finish("公会尚未建立")
+
+#     user_id = event.user_id
+#     if not await clan_manager.member_exists(group_id, user_id):
+#         await add_challenge.finish("成员不存在")
+
+#     now = get_utc_now()
+#     round_ = 1
+#     boss = 1
+#     type_ = ChallengeType.NORM.value
+#     await clan_manager.add_challenge(
+#         group_id, user_id, round_, now, boss, damage, type_
+#     )
