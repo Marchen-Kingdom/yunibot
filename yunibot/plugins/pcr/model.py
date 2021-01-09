@@ -5,8 +5,8 @@ clan = sqlalchemy.Table(
     "clan",
     metadata,
     sqlalchemy.Column("group_id", sqlalchemy.Integer, primary_key=True),
-    sqlalchemy.Column("clan_name", sqlalchemy.String),
-    sqlalchemy.Column("server", sqlalchemy.String),
+    sqlalchemy.Column("clan_name", sqlalchemy.String, nullable=False),
+    sqlalchemy.Column("server", sqlalchemy.String, nullable=False),
 )
 member = sqlalchemy.Table(
     "member",
@@ -18,7 +18,7 @@ member = sqlalchemy.Table(
         primary_key=True,
     ),
     sqlalchemy.Column("user_id", sqlalchemy.Integer, primary_key=True),
-    sqlalchemy.Column("nickname", sqlalchemy.String),
+    sqlalchemy.Column("nickname", sqlalchemy.String, nullable=False),
 )
 challenge = sqlalchemy.Table(
     "challenge",
