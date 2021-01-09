@@ -1,9 +1,6 @@
-from __future__ import annotations
-
 import operator
 import pathlib
 from datetime import datetime, timedelta, timezone
-from enum import Enum, auto
 from typing import Tuple
 
 from nonebot import get_driver
@@ -16,45 +13,10 @@ from nonebot.plugin import on_command
 from .config import Settings
 from .data import BOSS_HP, SCORE_RATES
 from .db import ClanManager
+from .typing import ChallengeType, Server
 
 SERVERS = ["JP", "TC", "SC"]
 RANK_GUIDE_TYPES = ["前卫", "中卫", "后卫"]
-
-
-class Server(Enum):
-    """Represents the server region."""
-
-    JP = auto()
-    TC = auto()
-    SC = auto()
-    UNKNOWN = auto()
-
-    def __str__(self):
-        if self == Server.JP:
-            return "JP"
-        if self == Server.TC:
-            return "TC"
-        if self == Server.SC:
-            return "SC"
-
-        return "UNKNOWN"
-
-    @classmethod
-    def get_server(cls, name: str) -> Server:
-        if name == "JP":
-            return Server.JP
-        if name == "TC":
-            return Server.TC
-        if name == "SC":
-            return Server.SC
-        return Server.UNKNOWN
-
-
-class ChallengeType(Enum):
-    NORM = auto()
-    LAST = auto()
-    EXT = auto()
-    TIMEOUT = auto()
 
 
 global_config = get_driver().config
@@ -222,10 +184,6 @@ def get_boss_info(round_: int, boss: int, server: Server) -> Tuple[int, float]:
     return boss_hp, score_rate
 
 
-def get_utc_now() -> int:
-    return int(datetime.utcnow().timestamp())
-
-
 async def get_current_progress(
     group_id: int, year: int, month: int, server: Server
 ) -> Tuple[int, int, int]:
@@ -279,29 +237,57 @@ async def handle_show_progress(bot: Bot, event: GroupMessageEvent):
     await show_progress.finish(report)
 
 
-# add_challenge = on_command("出刀", block=True)
+add_challenge = on_command("出刀", block=True)
 
 
-# @add_challenge.handle()
-# async def handle_add_challenge(bot: Bot, event: GroupMessageEvent):
-#     msg = str(event.get_message()).strip()
-#     try:
-#         damage = int(msg)
-#     except ValueError:
-#         await add_challenge.finish("输入错误")
+@add_challenge.handle()
+async def handle_add_challenge(bot: Bot, event: GroupMessageEvent):
+    msg = str(event.get_message()).strip()
+    args = msg.split(" ")
+    if len(args) == 0:
+        await add_challenge.finish("输入不能为空")
+    if len(args) != 1 and len(args) != 3:
+        await add_challenge.finish("输入错误")
+    round_ = None
+    boss = None
+    damage = None
+    if len(args) == 1:
+        try:
+            damage = int(args[0])
+        except ValueError:
+            await add_challenge.finish("输入错误")
+    if len(args) == 3:
+        try:
+            round_ = int(args[0])
+            boss = int(args[1])
+            damage = int(args[2])
+        except ValueError:
+            await add_challenge.finish("输入错误")
 
-#     group_id = event.group_id
-#     if not await clan_manager.clan_exists(group_id):
-#         await add_challenge.finish("公会尚未建立")
+    group_id = event.group_id
+    if not await clan_manager.clan_exists(group_id):
+        await add_challenge.finish("公会尚未建立")
 
-#     user_id = event.user_id
-#     if not await clan_manager.member_exists(group_id, user_id):
-#         await add_challenge.finish("成员不存在")
+    user_id = event.user_id
+    if not await clan_manager.member_exists(group_id, user_id):
+        await add_challenge.finish("成员不存在")
 
-#     now = get_utc_now()
-#     round_ = 1
-#     boss = 1
-#     type_ = ChallengeType.NORM.value
-#     await clan_manager.add_challenge(
-#         group_id, user_id, round_, now, boss, damage, type_
-#     )
+    _, _, server_code = await clan_manager.get_clan(group_id)
+    server = Server.get_server(server_code)
+    now = datetime.now()
+    year, month, _ = get_date(now)
+    cur_round, cur_boss, _ = await get_current_progress(group_id, year, month, server)
+    round_ = round_ or cur_round
+    boss = boss or cur_boss
+
+    type_ = ChallengeType.NORM
+
+    id_ = await clan_manager.add_challenge(
+        year, month, group_id, user_id, now, round_, boss, damage, type_  # type: ignore
+    )
+
+    report = f"出刀编号E{id_}：\n\n"
+    report += f"周目：{round_}\n"
+    report += f"Boss：{boss}\n"
+    report += f"伤害：{damage}"
+    await add_challenge.finish(report, at_sender=True)

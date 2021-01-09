@@ -1,27 +1,12 @@
 import asyncio
-from dataclasses import dataclass
+from datetime import datetime
 from typing import List, Tuple
 
 import sqlalchemy
 from databases import Database
 
 from .model import challenge, clan, member, metadata
-
-
-@dataclass
-class Challenge:
-    """Represents a challenge."""
-
-    id_: int
-    year: int
-    month: int
-    group_id: int
-    user_id: int
-    time: int
-    round_: int
-    boss: int
-    damage: int
-    type_: int
+from .typing import Challenge, ChallengeType
 
 
 class ClanManager:
@@ -82,26 +67,30 @@ class ClanManager:
 
     async def add_challenge(
         self,
+        year: int,
+        month: int,
         group_id: int,
         user_id: int,
-        time: int,
+        timestamp: datetime,
         round_: int,
         boss: int,
         damage: int,
-        type_: int,
-    ):
+        type_: ChallengeType,
+    ) -> int:
         # pylint: disable=no-value-for-parameter
         query = challenge.insert()
         values = {
+            "year": year,
+            "month": month,
             "group_id": group_id,
             "user_id": user_id,
-            "time": time,
+            "timestamp": timestamp,
             "round": round_,
             "boss": boss,
             "damage": damage,
-            "type": type_,
+            "type": type_.value,
         }
-        await self.db.execute(query=query, values=values)
+        return await self.db.execute(query=query, values=values)
 
     async def get_challenges(
         self, group_id: int, year: int, month: int
