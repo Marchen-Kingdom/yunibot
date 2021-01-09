@@ -34,7 +34,7 @@ challenge = sqlalchemy.Table(
     sqlalchemy.Column(
         "user_id", sqlalchemy.Integer, sqlalchemy.ForeignKey("member.user_id")
     ),
-    sqlalchemy.Column("time", sqlalchemy.TIMESTAMP, nullable=False),
+    sqlalchemy.Column("timestamp", sqlalchemy.TIMESTAMP, nullable=False),
     sqlalchemy.Column("round", sqlalchemy.Integer, nullable=False),
     sqlalchemy.Column("boss", sqlalchemy.Integer, nullable=False),
     sqlalchemy.Column("damage", sqlalchemy.Integer, nullable=False),
