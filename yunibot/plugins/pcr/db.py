@@ -5,7 +5,7 @@ from typing import List, Tuple
 import sqlalchemy
 from databases import Database
 
-from .model import challenge, clans, members, metadata
+from .model import challenge, clan, member, metadata
 
 
 @dataclass
@@ -48,8 +48,8 @@ class ClanManager:
         return True
 
     async def member_exists(self, group_id: int, user_id: int) -> bool:
-        query = members.select().where(
-            members.c.group_id == group_id and members.c.user_id == user_id
+        query = member.select().where(
+            member.c.group_id == group_id and member.c.user_id == user_id
         )
         row = await self.db.fetch_one(query=query)
         if row is None:
@@ -59,26 +59,24 @@ class ClanManager:
     async def create_clan(self, group_id: int, clan_name: str, server: str):
         # pylint: disable=no-value-for-parameter
         await self.db.execute(
-            clans.insert().values(group_id=group_id, clan_name=clan_name, server=server)
+            clan.insert().values(group_id=group_id, clan_name=clan_name, server=server)
         )
 
     async def get_clan(self, group_id: int) -> Tuple[int, str, str]:
-        query = clans.select().where(clans.c.group_id == group_id)
+        query = clan.select().where(clan.c.group_id == group_id)
         return await self.db.fetch_one(query=query)
 
     async def add_member(self, group_id: int, user_id: int, nickname: str):
         # pylint: disable=no-value-for-parameter
         await self.db.execute(
-            members.insert().values(
+            member.insert().values(
                 group_id=group_id, user_id=user_id, nickname=nickname
             )
         )
 
     async def list_members(self, group_id: int) -> List[str]:
         rows = await self.db.fetch_all(
-            sqlalchemy.select([members.c.nickname]).where(
-                members.c.group_id == group_id
-            )
+            sqlalchemy.select([member.c.nickname]).where(member.c.group_id == group_id)
         )
         return [nickname for (nickname,) in rows]
 
